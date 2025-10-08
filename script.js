@@ -1,4 +1,4 @@
-/* script.js — simulation with a client-side fake login
+/* script.js — simulation with a reliable client-side fake login
    Credentials (client-only demo):
    username: admin
    password: admin1
@@ -8,18 +8,90 @@
 */
 
 (function(){
-  // LOGIN elements
+  // ------------------------
+  // LOGIN elements & logic
+  // ------------------------
   const loginOverlay = document.getElementById('loginOverlay');
   const loginForm = document.getElementById('loginForm');
   const loginUser = document.getElementById('loginUser');
   const loginPass = document.getElementById('loginPass');
-  const loginBtn = document.getElementById('loginBtn');
   const demoBtn = document.getElementById('demoBtn');
   const loginMsg = document.getElementById('loginMsg');
 
-  // WATCH UI elements (rest of simulation)
+  // Demo credentials (edit here if you want different ones)
+  const DEMO_USER = 'admin';
+  const DEMO_PASS = 'admin1';
+
+  // Defensive checks
+  if (!loginOverlay || !loginForm || !loginUser || !loginPass || !demoBtn || !loginMsg) {
+    console.warn('Login UI elements missing or renamed. Check your index.html IDs.');
+  }
+
+  // Visual helper for messages
+  function showLoginMessage(text, isError){
+    if (!loginMsg) return;
+    loginMsg.textContent = text || '';
+    loginMsg.style.color = isError ? '#ffb3b3' : '#bfe8c7';
+  }
+
+  // Shake animation helper
+  function shakeLoginCard(){
+    const card = document.querySelector('.loginCard');
+    if (!card) return;
+    card.classList.remove('shake');
+    // trigger reflow to re-start animation
+    // eslint-disable-next-line no-unused-expressions
+    void card.offsetWidth;
+    card.classList.add('shake');
+  }
+
+  // Demo button fills fields (and focuses password)
+  demoBtn && demoBtn.addEventListener('click', () => {
+    if (loginUser) loginUser.value = DEMO_USER;
+    if (loginPass) loginPass.value = DEMO_PASS;
+    showLoginMessage('Demo credentials filled. Click Sign in.', false);
+    loginPass && loginPass.focus();
+  });
+
+  // handle login submit
+  loginForm && loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const u = (loginUser && loginUser.value) ? loginUser.value.trim() : '';
+    const p = (loginPass && loginPass.value) ? loginPass.value.trim() : '';
+
+    // basic input validation
+    if (!u || !p) {
+      showLoginMessage('Please enter both username and password.', true);
+      shakeLoginCard();
+      return;
+    }
+
+    showLoginMessage('Verifying...', false);
+
+    // emulate small delay for realism
+    setTimeout(() => {
+      if (u === DEMO_USER && p === DEMO_PASS) {
+        showLoginMessage('Access granted — unlocking stream...', false);
+        // hide overlay and start simulation
+        if (loginOverlay) loginOverlay.style.display = 'none';
+        // start simulation (if defined below)
+        try { startSimulationAfterAuth(); } catch (err) { console.warn('startSimulationAfterAuth not defined yet.'); }
+      } else {
+        showLoginMessage('Invalid credentials. Try again.', true);
+        shakeLoginCard();
+        // clear password for security/UX
+        if (loginPass) loginPass.value = '';
+        if (loginPass) loginPass.focus();
+      }
+    }, 700);
+  });
+
+  // ------------------------
+  // WATCH SIMULATION
+  // ------------------------
+  // Elements
   const canvas = document.getElementById('gameCanvas');
-  const ctx = canvas.getContext && canvas.getContext('2d');
+  const ctx = canvas && canvas.getContext && canvas.getContext('2d');
   const playPauseBtn = document.getElementById('playPause');
   const qualitySelect = document.getElementById('quality');
   const viewerEl = document.getElementById('viewerCount');
@@ -35,100 +107,30 @@
 
   const prankOverlay = document.getElementById('prankOverlay');
   const confettiCanvas = document.getElementById('confettiCanvas');
-  const confettiCtx = confettiCanvas.getContext && confettiCanvas.getContext('2d');
+  const confettiCtx = confettiCanvas && confettiCanvas.getContext && confettiCanvas.getContext('2d');
 
-  // Defensive checks
-  if (!loginOverlay || !loginForm || !loginUser || !loginPass) {
-    console.warn('Login elements missing — login disabled.');
-  }
-
-  // Realistic credentials for the demo (only client-side)
-  const DEMO_USER = 'admin';
-  const DEMO_PASS = 'admin1';
-
-  // Helper: show a short message (and optionally shake)
-  function showLoginMessage(text, isError){
-    loginMsg.textContent = text || '';
-    loginMsg.style.color = isError ? '#ffb3b3' : '#bfe8c7';
-    if (isError) {
-      const card = document.querySelector('.loginCard');
-      if (card) {
-        card.classList.remove('shake');
-        // trigger reflow to restart animation
-        void card.offsetWidth;
-        card.classList.add('shake');
-      }
-    }
-  }
-
-  // Demo credentials button (fills fields)
-  demoBtn && demoBtn.addEventListener('click', () => {
-    loginUser.value = DEMO_USER;
-    loginPass.value = DEMO_PASS;
-    showLoginMessage('Demo credentials filled. Press Sign in.', false);
-  });
-
-  // Handle login submission (client-side only)
-  loginForm && loginForm.addEventListener('submit', function(e){
-    e.preventDefault();
-    const u = (loginUser.value || '').trim();
-    const p = (loginPass.value || '').trim();
-
-    showLoginMessage('Verifying...', false);
-
-    // small fake delay to feel realistic
-    setTimeout(() => {
-      if (u === DEMO_USER && p === DEMO_PASS) {
-        showLoginMessage('Access granted — unlocking stream...', false);
-        // hide overlay and start simulation
-        loginOverlay && (loginOverlay.style.display = 'none');
-        startSimulationAfterAuth();
-      } else {
-        showLoginMessage('Invalid credentials. Try again.', true);
-        // clear password field for safety
-        loginPass.value = '';
-      }
-    }, 800);
-  });
-
-  // Allow Enter/Esc convenience
-  document.addEventListener('keydown', (e)=>{
-    if (e.key === 'Escape') {
-      // do nothing, keep overlay until correct login
-    }
-  });
-
-  // ========================
-  // WATCH SIMULATION
-  // ========================
-
-  // If user bypassed login (e.g., editing files), start simulation anyway
+  // If the overlay was hidden manually (for testing), start the simulation
   function startSimulationAfterAuth(){
-    // bootstrap / enable UI and simulation
-    initCanvas();
-    requestAnimationFrame(tick);
+    try {
+      initCanvas();
+      lastTick = performance.now();
+      requestAnimationFrame(tick);
+    } catch (err) {
+      console.error('Failed to start simulation:', err);
+    }
   }
 
-  // If the page loads and login overlay is hidden manually, allow starting
-  if (loginOverlay && getComputedStyle(loginOverlay).display === 'none') {
-    startSimulationAfterAuth();
-  }
-
-  // Canvas / simulation (lightweight, same as before)
-  if (!canvas || !ctx) {
-    console.error('Canvas not found; simulation cannot run.');
-    return;
-  }
-
+  // Canvas sizing
   function sizeCanvas(){
+    if (!canvas) return;
     const ratio = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
     canvas.width = Math.max(640, Math.floor(rect.width * ratio));
     canvas.height = Math.max(360, Math.floor(rect.width * 9/16 * ratio));
   }
   window.addEventListener('resize', sizeCanvas);
-  sizeCanvas();
 
+  // Simulation state
   let running = true;
   let elapsedSec = 0;
   let progress = 0.24;
@@ -150,14 +152,15 @@
       });
     }
   }
-  spawnObjects();
 
+  // Simple chat pool
   const chatPool = [
     "Nice shot!", "Where did you get that skin?", "This map is insane", "gg", "No way!",
     "Who else is playing tonight?", "Teach me that trick!", "This sim looks legit", "🔥🔥🔥",
     "Streamer, pls nerf!", "Loot spawn was stacked", "That was epic"
   ];
 
+  // Main tick + render loop
   function tick(now){
     const dt = Math.min(60, now - lastTick)/1000;
     lastTick = now;
@@ -166,18 +169,18 @@
       elapsedSec += dt;
       progress += dt * 0.003;
       if (progress > 1) progress = 1;
-
       viewers += (Math.random() - 0.48) * 4;
       viewers = Math.max(10, Math.round(viewers));
 
       for (const o of objects){
         o.x += o.vx * (dt*60);
         o.y += Math.sin((now/600) + o.x/600)*0.5;
-        if (o.x < 20 || o.x > canvas.width - 60) o.vx *= -1;
+        if (o.x < 20 || o.x > (canvas ? canvas.width - 60 : 1000)) o.vx *= -1;
       }
+
       if (Math.random() < 0.02){
         objects.push({
-          x: Math.random()*(canvas.width-80)+40,
+          x: Math.random()*((canvas?canvas.width:960)-80)+40,
           y: 0,
           vx: (Math.random()-0.5)*6,
           vy: 2 + Math.random()*4,
@@ -194,6 +197,7 @@
   }
 
   function render(){
+    if (!ctx || !canvas) return;
     ctx.fillStyle = '#07121a';
     ctx.fillRect(0,0,canvas.width,canvas.height);
 
@@ -247,9 +251,9 @@
     ctx.font = `${16 * (canvas.width/960)}px Inter, sans-serif`;
     ctx.fillText(`${viewers.toLocaleString()} watching`, canvas.width - 200, 38);
 
-    progressFill.style.width = Math.round(progress*100)+'%';
-    elapsedEl.textContent = formatTime(Math.floor(elapsedSec));
-    viewerEl.textContent = viewers.toLocaleString();
+    if (progressFill) progressFill.style.width = Math.round(progress*100)+'%';
+    if (elapsedEl) elapsedEl.textContent = formatTime(Math.floor(elapsedSec));
+    if (viewerEl) viewerEl.textContent = viewers.toLocaleString();
   }
 
   function roundRect(ctx,x,y,w,h,r){
@@ -271,6 +275,7 @@
   }
   function pad(n){return n.toString().padStart(2,'0')}
 
+  // Controls
   playPauseBtn && playPauseBtn.addEventListener('click', () => {
     running = !running;
     playPauseBtn.textContent = running ? '⏸ Pause' : '▶ Play';
@@ -294,18 +299,18 @@
     subscribeBtn.classList.toggle('outline', !subscribed);
   });
 
-  // Join server button (opens real link)
+  // Join server (replace link if desired)
   joinServerBtn && joinServerBtn.addEventListener('click', ()=>{
-    // Change the URL below to your real invite link
-    window.open('https://discord.gg/Wx5hQ3wVjG', '_blank');
+    window.open('https://discord.gg/YOUR_INVITE_CODE', '_blank');
   });
 
-  // Chat
+  // Chat helpers
   function pushChat(author, text){
+    if (!chatBox) return;
     const el = document.createElement('div');
     el.className = 'chatMsg';
     el.innerHTML = `<span class="chatMeta">${escapeHtml(author)}</span> ${escapeHtml(text)}`;
-    chatBox && chatBox.appendChild(el);
+    chatBox.appendChild(el);
     chatBox.scrollTop = chatBox.scrollHeight;
   }
 
@@ -317,12 +322,6 @@
     ['GamerKid', 'where u from?']
   ];
   seed.forEach((s,i)=>setTimeout(()=>pushChat(s[0], s[1]), 800 + i*700));
-
-  const chatPool = [
-    "Nice shot!", "Where did you get that skin?", "This map is insane", "gg", "No way!",
-    "Who else is playing tonight?", "Teach me that trick!", "This sim looks legit", "🔥🔥🔥",
-    "Streamer, pls nerf!", "Loot spawn was stacked", "That was epic"
-  ];
 
   setInterval(()=>{
     if (Math.random() < 0.7) {
@@ -342,8 +341,9 @@
     if (e.key === 'Enter') { e.preventDefault(); sendChat.click(); }
   });
 
-  function escapeHtml(t){ return t.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function escapeHtml(t){ return (t||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+  // viewer bursts
   setInterval(()=>{
     if (Math.random() < 0.12) {
       viewers += Math.floor(20 + Math.random()*200);
@@ -351,7 +351,9 @@
     }
   }, 3000);
 
-  // PRANK OVERLAY + CONFETTI (same as before)
+  // ---------------------------
+  // PRANK OVERLAY + CONFETTI
+  // ---------------------------
   function revealPrank(){ if (prankOverlay) prankOverlay.classList.remove('hidden'); startConfetti(); }
   function hidePrank(){ if (prankOverlay) prankOverlay.classList.add('hidden'); stopConfetti(); }
 
@@ -418,10 +420,14 @@
     requestAnimationFrame(confettiLoop);
   }
 
-  // Initialize canvas & simulation
+  // ---------------------------
+  // bootstrap canvas
+  // ---------------------------
   function initCanvas(){ sizeCanvas(); spawnObjects(); lastTick = performance.now(); }
 
-  // If you want the login overlay to be bypassable while testing, uncomment:
-  // loginOverlay.style.display = 'none'; startSimulationAfterAuth();
+  // If overlay is already hidden (e.g., you manually turned it off), start automatically
+  if (loginOverlay && getComputedStyle(loginOverlay).display === 'none') {
+    startSimulationAfterAuth();
+  }
 
 })();
