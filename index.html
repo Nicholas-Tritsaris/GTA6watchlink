@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Watch — Live Gameplay (Sim)</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- LOGIN OVERLAY (blocks access until correct credentials entered) -->
+  <div id="loginOverlay" class="login-overlay">
+    <div class="loginCard" role="dialog" aria-modal="true" aria-label="Login">
+      <h2>Restricted Access</h2>
+      <p class="muted">Enter corporate credentials to view the stream (simulation).</p>
+
+      <form id="loginForm" autocomplete="off">
+        <label class="formRow">
+          <span class="lbl">Username</span>
+          <input id="loginUser" required type="text" placeholder="username" />
+        </label>
+
+        <label class="formRow">
+          <span class="lbl">Password</span>
+          <input id="loginPass" required type="password" placeholder="password" />
+        </label>
+
+        <div class="rowActions">
+          <button id="loginBtn" class="pill">Sign in</button>
+          <button id="demoBtn" type="button" class="pill outline">Demo credentials</button>
+        </div>
+
+        <div id="loginMsg" class="loginMsg" aria-live="polite"></div>
+
+        <div class="notice">
+          <small><strong>Note:</strong> This is a harmless local demo. No data is sent or stored.</small>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN WATCH UI (same structure as previous simulation) -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo-dot"></div>
+      <div class="brand-name">GameWatch</div>
+    </div>
+    <div class="actions">
+      <button id="followBtn" class="pill">Follow</button>
+      <button id="subscribeBtn" class="pill outline">Subscribe</button>
+      <button id="joinServer" class="pill outline">Join Discord</button>
+    </div>
+  </header>
+
+  <main class="stage">
+    <section class="player-col">
+      <div class="player">
+        <canvas id="gameCanvas" width="960" height="540" aria-label="Simulated gameplay"></canvas>
+
+        <div class="player-overlay">
+          <div class="liveBadge">LIVE</div>
+          <div class="viewCount"><span id="viewerCount">1,024</span> watching</div>
+          <div class="controls">
+            <button id="playPause" class="control">⏸ Pause</button>
+            <select id="quality" class="control">
+              <option>1080p</option><option>720p</option><option>480p</option>
+            </select>
+            <button id="prankReveal" class="control ghost">Surprise</button>
+          </div>
+        </div>
+        <div id="progress" class="progress">
+          <div id="progressFill" style="width:24%"></div>
+        </div>
+      </div>
+
+      <div class="meta">
+        <h1 class="title">[SIM] Night Raid — Rooftop Skirmish</h1>
+        <div class="metaRow">
+          <div class="streamer">Streamer: <strong>RogueAce</strong></div>
+          <div class="time">Duration: <span id="elapsed">00:04:12</span></div>
+        </div>
+        <p class="description">This is a safe, simulated gameplay viewer. Nothing here is recorded or sent anywhere — demo only.</p>
+      </div>
+    </section>
+
+    <aside class="chat-col">
+      <div class="chatHeader">
+        <div class="chatTitle">Live Chat</div>
+        <div class="chatMeta"><span id="chatMode">Slow Mode</span></div>
+      </div>
+      <div id="chatBox" class="chatBox" aria-live="polite"></div>
+
+      <div class="chatInput">
+        <input id="chatField" type="text" placeholder="Say something (simulation)..." />
+        <button id="sendChat" class="pill">Send</button>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Prank overlay (hidden until reveal) -->
+  <div id="prankOverlay" class="overlay hidden" role="dialog" aria-modal="true">
+    <div class="prankCard">
+      <h2>Just a Simulation 🎮</h2>
+      <p>This is a harmless demo — no streams, no tracking, just fun effects.</p>
+      <div class="prankActions">
+        <button id="closePrank" class="pill">Close</button>
+        <button id="confettiBtn" class="pill outline">Celebrate</button>
+      </div>
+    </div>
+    <canvas id="confettiCanvas"></canvas>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
