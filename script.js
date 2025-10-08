@@ -297,7 +297,7 @@
   // Join server button (opens real link)
   joinServerBtn && joinServerBtn.addEventListener('click', ()=>{
     // Change the URL below to your real invite link
-    window.open('https://discord.gg/YOUR_INVITE_CODE', '_blank');
+    window.open('https://discord.gg/Wx5hQ3wVjG', '_blank');
   });
 
   // Chat
